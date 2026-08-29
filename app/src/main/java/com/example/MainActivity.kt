@@ -167,6 +167,7 @@ fun CatResolutionApp() {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AppHeader() {
     TopAppBar(
