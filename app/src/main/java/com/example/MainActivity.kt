@@ -94,6 +94,7 @@ private enum class Tab(val label: String) {
     GAMES("Jogos"), OVERLAY("Overlay"), HISTORY("Histórico"), SETTINGS("Config")
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatResolutionApp() {
     var tab by remember { mutableStateOf(Tab.GAMES) }
