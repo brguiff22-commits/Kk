@@ -293,7 +293,7 @@ private object ShizukuBridge {
             } else {
                 val metrics = context.resources.displayMetrics
                 val width = (metrics.widthPixels * multiplier).toInt()
-                val process = Shizuku.newProcess(arrayOf("sh", "-c", "wm size ${width}x${metrics.heightPixels}"), null, null)
+                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "wm size ${width}x${metrics.heightPixels}"))
                 process.waitFor()
                 val success = process.exitValue() == 0
                 Toast.makeText(context, if (success) "Resolução aplicada: ${width} x ${metrics.heightPixels}" else "Não foi possível aplicar a resolução", Toast.LENGTH_SHORT).show()
@@ -311,7 +311,7 @@ private object ShizukuBridge {
                 Toast.makeText(context, "Shizuku não está autorizado", Toast.LENGTH_SHORT).show()
                 false
             } else {
-                val process = Shizuku.newProcess(arrayOf("sh", "-c", "wm size reset"), null, null)
+                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "wm size reset"))
                 process.waitFor()
                 val success = process.exitValue() == 0
                 Toast.makeText(context, if (success) "Resolução restaurada" else "Não foi possível restaurar", Toast.LENGTH_SHORT).show()
