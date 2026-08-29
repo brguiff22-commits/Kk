@@ -3,6 +3,7 @@ package com.example
 import android.os.Bundle
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -80,6 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.MinhaIATheme
 import java.util.Locale
+import rikka.shizuku.Shizuku
 
 private val Purple = Color(0xFF9B5CFF)
 private val DeepPurple = Color(0xFF160D22)
@@ -108,6 +110,7 @@ fun CatResolutionApp() {
     var projectionMode by remember { mutableStateOf("ALONGAR") }
     var darkMode by remember { mutableStateOf(preferences.getBoolean("dark_mode", true)) }
     var applied by remember { mutableStateOf(false) }
+    var shizukuReady by remember { mutableStateOf(ShizukuBridge.isReady(context)) }
     LaunchedEffect(darkMode) { preferences.edit().putBoolean("dark_mode", darkMode).apply() }
     var showAddDialog by remember { mutableStateOf(false) }
     var showCaptureDialog by remember { mutableStateOf(false) }
@@ -150,7 +153,7 @@ fun CatResolutionApp() {
             }
         ) { padding ->
             when (tab) {
-                Tab.GAMES -> GamesScreen(padding, multiplier, { multiplier = it }, { showAddDialog = true }, applied, { applied = true })
+                Tab.GAMES -> GamesScreen(padding, multiplier, { multiplier = it }, { showAddDialog = true }, applied, { applied = ShizukuBridge.apply(context, multiplier); shizukuReady = ShizukuBridge.isReady(context) }, { applied = false; ShizukuBridge.restore(context) }, shizukuReady)
                 Tab.OVERLAY -> OverlayScreen(padding, multiplier, { multiplier = it })
                 Tab.HISTORY -> HistoryScreen(padding)
                 Tab.SETTINGS -> SettingsScreen(
@@ -199,7 +202,7 @@ private fun AppHeader() {
 }
 
 @Composable
-private fun GamesScreen(padding: PaddingValues, value: Float, onValue: (Float) -> Unit, onAdd: () -> Unit, applied: Boolean, onActivate: () -> Unit) {
+private fun GamesScreen(padding: PaddingValues, value: Float, onValue: (Float) -> Unit, onAdd: () -> Unit, applied: Boolean, onActivate: () -> Unit, onRestore: () -> Unit, shizukuReady: Boolean) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(padding),
         contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
@@ -209,8 +212,8 @@ private fun GamesScreen(padding: PaddingValues, value: Float, onValue: (Float) -
             Text("TELA ESTICADA", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
             Text("Alongamento inteligente para seus jogos", color = Muted, fontSize = 13.sp)
         }
-        item { MultiplierCard(value, onValue, onActivate, applied) }
-        item { ShizukuCard() }
+        item { MultiplierCard(value, onValue, onActivate, onRestore, applied) }
+        item { ShizukuCard(shizukuReady) }
         item { FeatureRow() }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -223,7 +226,7 @@ private fun GamesScreen(padding: PaddingValues, value: Float, onValue: (Float) -
 }
 
 @Composable
-private fun MultiplierCard(value: Float, onValue: (Float) -> Unit, onActivate: () -> Unit, applied: Boolean) {
+private fun MultiplierCard(value: Float, onValue: (Float) -> Unit, onActivate: () -> Unit, onRestore: () -> Unit, applied: Boolean) {
     Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.padding(18.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -240,7 +243,7 @@ private fun MultiplierCard(value: Float, onValue: (Float) -> Unit, onActivate: (
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(onClick = onActivate, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Purple), shape = RoundedCornerShape(11.dp)) { Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(5.dp)); Text(if (applied) "ATIVADO" else "ATIVAR", fontWeight = FontWeight.Bold) }
-                OutlinedButton(onClick = { onValue(1.0f) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(11.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)) { Icon(Icons.Default.Restore, null); Spacer(Modifier.width(5.dp)); Text("RESTAURAR") }
+                OutlinedButton(onClick = { onValue(1.0f); onRestore() }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(11.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)) { Icon(Icons.Default.Restore, null); Spacer(Modifier.width(5.dp)); Text("RESTAURAR") }
             }
             Spacer(Modifier.height(15.dp))
             Text("PRESETS RÁPIDOS", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -252,7 +255,7 @@ private fun MultiplierCard(value: Float, onValue: (Float) -> Unit, onActivate: (
 @Composable private fun ResolutionBox(label: String, text: String, modifier: Modifier) { Column(modifier.clip(RoundedCornerShape(10.dp)).background(Color(0xFF30203F)).padding(10.dp)) { Text(label, color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold); Text(text, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold) } }
 @Composable private fun PresetButton(text: String, onClick: () -> Unit) { TextButton(onClick = onClick, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0xFF38204B)), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) { Text(text, color = Purple, fontSize = 11.sp) } }
 
-@Composable private fun ShizukuCard() { Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF172D27)), shape = RoundedCornerShape(14.dp)) { Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.CheckCircle, null, tint = Green, modifier = Modifier.size(25.dp)); Spacer(Modifier.width(10.dp)); Column { Text("SHIZUKU AUTORIZADO", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp); Text("Pronto para aplicar alterações", color = Green, fontSize = 11.sp) } } } }
+@Composable private fun ShizukuCard(ready: Boolean) { Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF172D27)), shape = RoundedCornerShape(14.dp)) { Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.CheckCircle, null, tint = if (ready) Green else Color(0xFFFFB86B), modifier = Modifier.size(25.dp)); Spacer(Modifier.width(10.dp)); Column { Text(if (ready) "SHIZUKU AUTORIZADO" else "SHIZUKU NÃO AUTORIZADO", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp); Text(if (ready) "Pronto para aplicar alterações" else "Abra o Shizuku e autorize o aplicativo", color = if (ready) Green else Color(0xFFFFB86B), fontSize = 11.sp) } } } }
 @Composable private fun FeatureRow() { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf(Icons.Default.Layers to "Overlay\nFlutuante", Icons.Default.Tune to "Projeção em\nTempo Real", Icons.Default.Restore to "Aplicar /\nRestaurar").forEach { (icon, label) -> Card(Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(12.dp)) { Column(Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) { Icon(icon, null, tint = Purple, modifier = Modifier.size(23.dp)); Spacer(Modifier.height(5.dp)); Text(label, color = Muted, fontSize = 10.sp, textAlign = TextAlign.Center) } } } } }
 @Composable private fun GameItem(name: String) { Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(13.dp)) { Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Box(Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF49305B)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Apps, null, tint = Purple) }; Spacer(Modifier.width(12.dp)); Text(name, color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f)); TextButton(onClick = {}) { Text("ABRIR", color = Purple, fontWeight = FontWeight.Bold) } } } }
 
@@ -269,3 +272,54 @@ private fun MultiplierCard(value: Float, onValue: (Float) -> Unit, onActivate: (
 @Composable private fun CaptureDialog(running: Boolean, captured: Boolean, onDismiss: () -> Unit, onStart: () -> Unit, onStop: () -> Unit, onReset: () -> Unit) { var consent by remember { mutableStateOf(false) }; AlertDialog(onDismissRequest = onDismiss, containerColor = Panel, title = { Text(if (captured) "REVISAR CAPTURA" else if (running) "CAPTURA EM ANDAMENTO" else "ANTES DE COMEÇAR", color = Color.White) }, text = { Column { if (captured) { Text("A captura foi finalizada.", color = Color.White); Text("Duração e etapas registradas disponíveis para revisão.", color = Muted, fontSize = 12.sp); Spacer(Modifier.height(12.dp)); Text("O que aconteceu? (opcional)", color = Muted, fontSize = 12.sp) } else if (running) { Text("Capturando e funcionando — 00:42", color = Green, fontWeight = FontWeight.Bold); Text("Logs técnicos e etapas do aplicativo estão sendo registrados.", color = Muted, fontSize = 12.sp) } else { Text("O APK poderá registrar logs técnicos, estado do Shizuku, abertura de jogos e mensagens de erro.", color = Color.White, fontSize = 13.sp); Spacer(Modifier.height(8.dp)); Text("Não gravamos tela, áudio, senhas ou conversas.", color = Muted, fontSize = 12.sp); Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(consent, { consent = it }); Text("Li e concordo com o uso técnico dos dados", color = Color.White, fontSize = 11.sp) } } } }, confirmButton = { if (captured) { Row { TextButton(onClick = { onReset(); onDismiss() }) { Text("APAGAR", color = Color(0xFFFF6B6B)) }; TextButton(onClick = onDismiss) { Text("AGORA NÃO", color = Muted) }; Button(onClick = onDismiss, colors = ButtonDefaults.buttonColors(containerColor = Purple)) { Text("ENVIAR CAPTURA") } } } else if (running) Button(onClick = onStop, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC4545))) { Text("PARAR") } else Button(onClick = onStart, enabled = consent, colors = ButtonDefaults.buttonColors(containerColor = Purple)) { Text("INICIAR CAPTURA") } }) }
 
 private fun formatMultiplier(value: Float): String = String.format(Locale.US, "%.2fx", value)
+
+private object ShizukuBridge {
+    private const val REQUEST_CODE = 2408
+
+    fun isReady(context: Context): Boolean {
+        return try {
+            if (!Shizuku.pingBinder()) return false
+            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) return true
+            Shizuku.requestPermission(REQUEST_CODE)
+            false
+        } catch (_: Throwable) { false }
+    }
+
+    fun apply(context: Context, multiplier: Float): Boolean {
+        return try {
+            if (!isReady(context)) {
+                Toast.makeText(context, "Abra o Shizuku e autorize o CAT RESOLUTION PRO", Toast.LENGTH_LONG).show()
+                false
+            } else {
+                val metrics = context.resources.displayMetrics
+                val width = (metrics.widthPixels * multiplier).toInt()
+                val process = Shizuku.newProcess(arrayOf("sh", "-c", "wm size ${width}x${metrics.heightPixels}"), null, null)
+                process.waitFor()
+                val success = process.exitValue() == 0
+                Toast.makeText(context, if (success) "Resolução aplicada: ${width} x ${metrics.heightPixels}" else "Não foi possível aplicar a resolução", Toast.LENGTH_SHORT).show()
+                success
+            }
+        } catch (_: Throwable) {
+            Toast.makeText(context, "Erro ao executar o comando pelo Shizuku", Toast.LENGTH_LONG).show()
+            false
+        }
+    }
+
+    fun restore(context: Context): Boolean {
+        return try {
+            if (!isReady(context)) {
+                Toast.makeText(context, "Shizuku não está autorizado", Toast.LENGTH_SHORT).show()
+                false
+            } else {
+                val process = Shizuku.newProcess(arrayOf("sh", "-c", "wm size reset"), null, null)
+                process.waitFor()
+                val success = process.exitValue() == 0
+                Toast.makeText(context, if (success) "Resolução restaurada" else "Não foi possível restaurar", Toast.LENGTH_SHORT).show()
+                success
+            }
+        } catch (_: Throwable) {
+            Toast.makeText(context, "Erro ao restaurar a resolução", Toast.LENGTH_LONG).show()
+            false
+        }
+    }
+}
