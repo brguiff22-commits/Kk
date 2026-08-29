@@ -1,0 +1,6 @@
+{
+  "name": "Minha IA",
+  "description": "Aplicativo moderno e profissional de inteligência artificial com chat em tempo real, suporte a imagens, documentos, entrada de voz e histórico.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
