@@ -32,7 +32,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun TypingIndicator(
     modifier: Modifier = Modifier,
-    botName: String = "Minha IA"
+    botName: String = "CAT RESOLUTION PRO"
 ) {
     val dots = listOf(
         remember { Animatable(0f) },

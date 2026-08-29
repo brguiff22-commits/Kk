@@ -1,6 +1,6 @@
 {
-  "name": "Minha IA",
-  "description": "Aplicativo moderno e profissional de inteligência artificial com chat em tempo real, suporte a imagens, documentos, entrada de voz e histórico.",
+  "name": "CAT RESOLUTION PRO",
+  "description": "Ferramenta de alongamento de tela e controle de resolução inteligente para jogos com suporte Shizuku, overlay flutuante e diagnóstico.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

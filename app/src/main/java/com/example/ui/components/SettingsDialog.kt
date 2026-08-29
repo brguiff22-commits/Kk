@@ -399,8 +399,8 @@ fun SettingsDialog(
                     Button(
                         onClick = {
                             val updated = currentSettings.copy(
-                                appName = botName.trim().ifEmpty { "Minha IA" },
-                                botPersonaName = botName.trim().ifEmpty { "Minha IA" },
+                                appName = botName.trim().ifEmpty { "CAT RESOLUTION PRO" },
+                                botPersonaName = botName.trim().ifEmpty { "CAT RESOLUTION PRO" },
                                 userName = userName.trim().ifEmpty { "Você" },
                                 apiKey = apiKey.trim(),
                                 selectedModel = selectedModel,

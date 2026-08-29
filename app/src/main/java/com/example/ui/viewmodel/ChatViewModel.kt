@@ -256,7 +256,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "pt-BR")
                 putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "pt-BR")
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-                putExtra(RecognizerIntent.EXTRA_PROMPT, "Fale com Minha IA em português...")
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Fale com CAT RESOLUTION PRO em português...")
             }
 
             speechRecognizer?.startListening(intent)
