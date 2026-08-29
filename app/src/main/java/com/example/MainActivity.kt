@@ -1,6 +1,9 @@
 package com.example
 
 import android.os.Bundle
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -63,6 +66,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -97,16 +101,21 @@ private enum class Tab(val label: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatResolutionApp() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val preferences = remember { context.getSharedPreferences("cat_resolution", Context.MODE_PRIVATE) }
     var tab by remember { mutableStateOf(Tab.GAMES) }
     var multiplier by remember { mutableStateOf(1.19f) }
     var projectionMode by remember { mutableStateOf("ALONGAR") }
-    var darkMode by remember { mutableStateOf(true) }
+    var darkMode by remember { mutableStateOf(preferences.getBoolean("dark_mode", true)) }
+    var applied by remember { mutableStateOf(false) }
+    LaunchedEffect(darkMode) { preferences.edit().putBoolean("dark_mode", darkMode).apply() }
     var showAddDialog by remember { mutableStateOf(false) }
     var showCaptureDialog by remember { mutableStateOf(false) }
     var captureRunning by remember { mutableStateOf(false) }
     var captured by remember { mutableStateOf(false) }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = DeepPurple) {
+    MaterialTheme(colorScheme = if (darkMode) androidx.compose.material3.darkColorScheme(primary = Purple, background = DeepPurple, surface = Panel) else androidx.compose.material3.lightColorScheme(primary = Color(0xFF6F32B5), background = Color(0xFFF8F4FC), surface = Color.White)) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Scaffold(
             containerColor = DeepPurple,
             topBar = { AppHeader() },
@@ -141,7 +150,7 @@ fun CatResolutionApp() {
             }
         ) { padding ->
             when (tab) {
-                Tab.GAMES -> GamesScreen(padding, multiplier, { multiplier = it }, { showAddDialog = true })
+                Tab.GAMES -> GamesScreen(padding, multiplier, { multiplier = it }, { showAddDialog = true }, applied, { applied = true })
                 Tab.OVERLAY -> OverlayScreen(padding, multiplier, { multiplier = it })
                 Tab.HISTORY -> HistoryScreen(padding)
                 Tab.SETTINGS -> SettingsScreen(
@@ -154,6 +163,7 @@ fun CatResolutionApp() {
                 )
             }
         }
+    }
     }
 
     if (showAddDialog) AddAppDialog(onDismiss = { showAddDialog = false })
@@ -189,7 +199,7 @@ private fun AppHeader() {
 }
 
 @Composable
-private fun GamesScreen(padding: PaddingValues, value: Float, onValue: (Float) -> Unit, onAdd: () -> Unit) {
+private fun GamesScreen(padding: PaddingValues, value: Float, onValue: (Float) -> Unit, onAdd: () -> Unit, applied: Boolean, onActivate: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(padding),
         contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
@@ -199,7 +209,7 @@ private fun GamesScreen(padding: PaddingValues, value: Float, onValue: (Float) -
             Text("TELA ESTICADA", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
             Text("Alongamento inteligente para seus jogos", color = Muted, fontSize = 13.sp)
         }
-        item { MultiplierCard(value, onValue) }
+        item { MultiplierCard(value, onValue, onActivate, applied) }
         item { ShizukuCard() }
         item { FeatureRow() }
         item {
@@ -213,7 +223,7 @@ private fun GamesScreen(padding: PaddingValues, value: Float, onValue: (Float) -
 }
 
 @Composable
-private fun MultiplierCard(value: Float, onValue: (Float) -> Unit) {
+private fun MultiplierCard(value: Float, onValue: (Float) -> Unit, onActivate: () -> Unit, applied: Boolean) {
     Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.padding(18.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -229,7 +239,7 @@ private fun MultiplierCard(value: Float, onValue: (Float) -> Unit) {
             }
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(onClick = {}, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Purple), shape = RoundedCornerShape(11.dp)) { Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(5.dp)); Text("ATIVAR", fontWeight = FontWeight.Bold) }
+                Button(onClick = onActivate, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Purple), shape = RoundedCornerShape(11.dp)) { Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(5.dp)); Text(if (applied) "ATIVADO" else "ATIVAR", fontWeight = FontWeight.Bold) }
                 OutlinedButton(onClick = { onValue(1.0f) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(11.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)) { Icon(Icons.Default.Restore, null); Spacer(Modifier.width(5.dp)); Text("RESTAURAR") }
             }
             Spacer(Modifier.height(15.dp))
