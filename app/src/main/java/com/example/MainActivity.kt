@@ -1,21 +1,9 @@
 package com.example
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,463 +18,242 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.DrawerValue
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.ui.components.ChatDrawerContent
-import com.example.ui.components.ChatInputBar
-import com.example.ui.components.ChatMessageItem
-import com.example.ui.components.SettingsDialog
-import com.example.ui.components.TypingIndicator
 import com.example.ui.theme.MinhaIATheme
-import com.example.ui.viewmodel.ChatViewModel
-import kotlinx.coroutines.launch
+import java.util.Locale
+
+private val Purple = Color(0xFF9B5CFF)
+private val DeepPurple = Color(0xFF160D22)
+private val Panel = Color(0xFF241731)
+private val Muted = Color(0xFFB9AAC7)
+private val Green = Color(0xFF4ADE80)
 
 class MainActivity : ComponentActivity() {
-
-    private val viewModel: ChatViewModel by viewModels()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            val settings by viewModel.settings.collectAsStateWithLifecycle()
-
-            MinhaIATheme(themeStyle = settings.themeStyle) {
-                MainChatScreen(viewModel = viewModel)
-            }
-        }
+        setContent { MinhaIATheme { CatResolutionApp() } }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+private enum class Tab(val label: String) {
+    GAMES("Jogos"), OVERLAY("Overlay"), HISTORY("Histórico"), SETTINGS("Config")
+}
+
 @Composable
-fun MainChatScreen(viewModel: ChatViewModel) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+fun CatResolutionApp() {
+    var tab by remember { mutableStateOf(Tab.GAMES) }
+    var multiplier by remember { mutableStateOf(1.19f) }
+    var projectionMode by remember { mutableStateOf("ALONGAR") }
+    var darkMode by remember { mutableStateOf(true) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var showCaptureDialog by remember { mutableStateOf(false) }
+    var captureRunning by remember { mutableStateOf(false) }
+    var captured by remember { mutableStateOf(false) }
 
-    val settings by viewModel.settings.collectAsStateWithLifecycle()
-    val allSessions by viewModel.allSessions.collectAsStateWithLifecycle()
-    val currentSessionId by viewModel.currentSessionId.collectAsStateWithLifecycle()
-    val messages by viewModel.currentMessages.collectAsStateWithLifecycle()
-    val inputText by viewModel.inputText.collectAsStateWithLifecycle()
-    val isGenerating by viewModel.isGenerating.collectAsStateWithLifecycle()
-    val attachedUri by viewModel.attachedUri.collectAsStateWithLifecycle()
-    val attachedType by viewModel.attachedType.collectAsStateWithLifecycle()
-    val attachedName by viewModel.attachedName.collectAsStateWithLifecycle()
-    val isListeningVoice by viewModel.isListeningVoice.collectAsStateWithLifecycle()
-
-    var showSettingsDialog by remember { mutableStateOf(false) }
-
-    // Auto-scroll list state
-    val listState = rememberLazyListState()
-
-    // Smooth auto-scroll when message count changes or AI begins typing
-    LaunchedEffect(messages.size, isGenerating) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
-        }
-    }
-
-    // Audio Permission Launcher
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            viewModel.toggleVoiceInput()
-        } else {
-            Toast.makeText(context, "Permissão de microfone necessária para comando de voz", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    val currentSessionTitle = remember(currentSessionId, allSessions) {
-        allSessions.find { it.id == currentSessionId }?.title ?: "Nova Conversa"
-    }
-
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet(
-                drawerContainerColor = MaterialTheme.colorScheme.surface
-            ) {
-                ChatDrawerContent(
-                    sessions = allSessions,
-                    currentSessionId = currentSessionId,
-                    onSelectSession = { id ->
-                        viewModel.selectSession(id)
-                        scope.launch { drawerState.close() }
-                    },
-                    onNewChat = {
-                        viewModel.createNewSession()
-                        scope.launch { drawerState.close() }
-                    },
-                    onDeleteSession = { id ->
-                        viewModel.deleteSession(id)
-                    },
-                    onRenameSession = { id, title ->
-                        viewModel.renameSession(id, title)
-                    },
-                    onOpenSettings = {
-                        showSettingsDialog = true
-                        scope.launch { drawerState.close() }
-                    },
-                    onClearAllHistory = {
-                        viewModel.clearAllHistory()
-                        scope.launch { drawerState.close() }
-                    },
-                    botName = settings.botPersonaName,
-                    selectedModel = settings.selectedModel
-                )
-            }
-        }
-    ) {
+    Surface(modifier = Modifier.fillMaxSize(), color = DeepPurple) {
         Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(34.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(
-                                                MaterialTheme.colorScheme.primary,
-                                                MaterialTheme.colorScheme.secondary
-                                            )
-                                        )
-                                    )
-                                    .padding(2.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_ai_logo),
-                                    contentDescription = "Logo",
-                                    modifier = Modifier
-                                        .size(30.dp)
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = settings.botPersonaName,
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(6.dp)
-                                            .clip(CircleShape)
-                                            .background(if (isGenerating) MaterialTheme.colorScheme.primary else Color(0xFF10B981))
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = if (isGenerating) "Respondendo..." else "Online",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontSize = 10.sp,
-                                            color = if (isGenerating) MaterialTheme.colorScheme.primary else Color(0xFF10B981)
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(
-                            onClick = { scope.launch { drawerState.open() } },
-                            modifier = Modifier.testTag("drawer_menu_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Abrir Menu",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    },
-                    actions = {
-                        // New Chat Quick Action Button
-                        IconButton(
-                            onClick = { viewModel.createNewSession() },
-                            modifier = Modifier.testTag("new_chat_top_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Nova Conversa",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        // Settings Button
-                        IconButton(
-                            onClick = { showSettingsDialog = true },
-                            modifier = Modifier.testTag("open_settings_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Configurações",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                )
-            },
+            containerColor = DeepPurple,
+            topBar = { AppHeader() },
             bottomBar = {
-                ChatInputBar(
-                    text = inputText,
-                    onTextChange = { viewModel.onInputTextChanged(it) },
-                    onSendMessage = { viewModel.sendMessage() },
-                    isGenerating = isGenerating,
-                    isListeningVoice = isListeningVoice,
-                    onToggleVoice = {
-                        val hasRecordPermission = ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.RECORD_AUDIO
-                        ) == PackageManager.PERMISSION_GRANTED
-
-                        if (hasRecordPermission) {
-                            viewModel.toggleVoiceInput()
-                        } else {
-                            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        }
-                    },
-                    attachedUri = attachedUri,
-                    attachedType = attachedType,
-                    attachedName = attachedName,
-                    onAttach = { uri, type, name ->
-                        viewModel.setAttachment(uri, type, name)
-                    },
-                    onRemoveAttachment = {
-                        viewModel.clearAttachment()
-                    }
-                )
-            },
-            containerColor = MaterialTheme.colorScheme.background
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                if (messages.isEmpty()) {
-                    // Empty State / Welcome Screen with Quick Suggestion Cards
-                    EmptyChatWelcomeView(
-                        botName = settings.botPersonaName,
-                        userName = settings.userName,
-                        onSuggestionClick = { suggestion ->
-                            viewModel.onInputTextChanged(suggestion)
-                            viewModel.sendMessage()
-                        },
-                        onOpenSettings = { showSettingsDialog = true }
-                    )
-                } else {
-                    // Chat Messages List
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 4.dp),
-                        contentPadding = PaddingValues(bottom = 12.dp)
-                    ) {
-                        itemsIndexed(messages, key = { _, msg -> msg.id }) { index, msg ->
-                            val isLast = index == messages.size - 1
-                            ChatMessageItem(
-                                message = msg,
-                                botName = settings.botPersonaName,
-                                userName = settings.userName,
-                                onRegenerate = { viewModel.regenerateLastResponse() },
-                                isLastMessage = isLast
+                NavigationBar(containerColor = Color(0xFF20132C)) {
+                    Tab.values().forEach { item ->
+                        NavigationBarItem(
+                            selected = tab == item,
+                            onClick = { tab = item },
+                            icon = {
+                                Icon(
+                                    imageVector = when (item) {
+                                        Tab.GAMES -> Icons.Default.Gamepad
+                                        Tab.OVERLAY -> Icons.Default.Layers
+                                        Tab.HISTORY -> Icons.Default.History
+                                        Tab.SETTINGS -> Icons.Default.Settings
+                                    },
+                                    contentDescription = item.label
+                                )
+                            },
+                            label = { Text(item.label, fontSize = 11.sp) },
+                            colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                                selectedIconColor = Purple,
+                                selectedTextColor = Purple,
+                                indicatorColor = Color(0xFF38204B),
+                                unselectedIconColor = Muted,
+                                unselectedTextColor = Muted
                             )
-                        }
-
-                        if (isGenerating) {
-                            item {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.Start
-                                ) {
-                                    TypingIndicator(
-                                        botName = settings.botPersonaName,
-                                        modifier = Modifier.padding(start = 42.dp)
-                                    )
-                                }
-                            }
-                        }
+                        )
                     }
                 }
+            }
+        ) { padding ->
+            when (tab) {
+                Tab.GAMES -> GamesScreen(padding, multiplier, { multiplier = it }, { showAddDialog = true })
+                Tab.OVERLAY -> OverlayScreen(padding, multiplier, { multiplier = it })
+                Tab.HISTORY -> HistoryScreen(padding)
+                Tab.SETTINGS -> SettingsScreen(
+                    padding = padding,
+                    projectionMode = projectionMode,
+                    onProjectionModeChange = { projectionMode = it },
+                    darkMode = darkMode,
+                    onDarkModeChange = { darkMode = it },
+                    onCapture = { showCaptureDialog = true }
+                )
             }
         }
     }
 
-    if (showSettingsDialog) {
-        SettingsDialog(
-            currentSettings = settings,
-            onSave = { updated ->
-                viewModel.updateSettings(updated)
-            },
-            onDismiss = { showSettingsDialog = false }
-        )
+    if (showAddDialog) AddAppDialog(onDismiss = { showAddDialog = false })
+    if (showCaptureDialog) CaptureDialog(
+        running = captureRunning,
+        captured = captured,
+        onDismiss = { showCaptureDialog = false },
+        onStart = { captureRunning = true },
+        onStop = { captureRunning = false; captured = true },
+        onReset = { captured = false; captureRunning = false }
+    )
+}
+
+@Composable
+private fun AppHeader() {
+    TopAppBar(
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(42.dp).clip(CircleShape).background(Purple),
+                    contentAlignment = Alignment.Center
+                ) { Text("🐱", fontSize = 24.sp) }
+                Spacer(Modifier.width(10.dp))
+                Column {
+                    Text("CAT RESOLUTION", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("PRO", color = Purple, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = DeepPurple)
+    )
+}
+
+@Composable
+private fun GamesScreen(padding: PaddingValues, value: Float, onValue: (Float) -> Unit, onAdd: () -> Unit) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(padding),
+        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Text("TELA ESTICADA", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+            Text("Alongamento inteligente para seus jogos", color = Muted, fontSize = 13.sp)
+        }
+        item { MultiplierCard(value, onValue) }
+        item { ShizukuCard() }
+        item { FeatureRow() }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("MEUS JOGOS", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                TextButton(onClick = onAdd) { Icon(Icons.Default.Add, null, tint = Purple); Spacer(Modifier.width(4.dp)); Text("ADICIONAR", color = Purple) }
+            }
+        }
+        items(listOf("Blood Strike", "Free Fire", "PUBG Mobile")) { GameItem(it) }
     }
 }
 
 @Composable
-fun EmptyChatWelcomeView(
-    botName: String,
-    userName: String,
-    onSuggestionClick: (String) -> Unit,
-    onOpenSettings: () -> Unit
-) {
-    val suggestions = listOf(
-        "💡 Explique a computação quântica de forma simples",
-        "✍️ Escreva um e-mail formal solicitando uma reunião",
-        "🐍 Crie uma função em Python para ordenar dados",
-        "🌎 Quais são os principais pontos turísticos do Brasil?"
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Glowing AI Logo Banner
-        Box(
-            modifier = Modifier
-                .size(76.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
-                            Color.Transparent
-                        )
-                    )
-                )
-                .padding(3.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_ai_logo),
-                contentDescription = "Minha IA Logo",
-                modifier = Modifier
-                    .size(68.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        Text(
-            text = "Olá, $userName!",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = "Eu sou $botName. Como posso te ajudar hoje?",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Suggestions
-        Text(
-            text = "Sugestões de conversa:",
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.align(Alignment.Start)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            suggestions.forEach { suggestion ->
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onSuggestionClick(suggestion) }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = suggestion,
-                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
+private fun MultiplierCard(value: Float, onValue: (Float) -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(18.dp)) {
+        Column(Modifier.padding(18.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Column { Text("MULTIPLICADOR ATUAL", color = Muted, fontSize = 12.sp, fontWeight = FontWeight.Bold); Text(formatMultiplier(value), color = Purple, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold) }
+                Icon(Icons.Default.Tune, null, tint = Purple, modifier = Modifier.size(30.dp))
             }
+            Slider(value = value, onValueChange = onValue, valueRange = 1f..1.3f, colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = Purple, activeTrackColor = Purple, inactiveTrackColor = Color(0xFF513769)))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("1.00x", color = Muted, fontSize = 11.sp); Text("1.30x", color = Muted, fontSize = 11.sp) }
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ResolutionBox("NATIVA", "2688 x 1216", Modifier.weight(1f))
+                ResolutionBox("PROJEÇÃO", "${(2688 * value).toInt()} x 1216", Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(onClick = {}, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Purple), shape = RoundedCornerShape(11.dp)) { Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(5.dp)); Text("ATIVAR", fontWeight = FontWeight.Bold) }
+                OutlinedButton(onClick = { onValue(1.0f) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(11.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)) { Icon(Icons.Default.Restore, null); Spacer(Modifier.width(5.dp)); Text("RESTAURAR") }
+            }
+            Spacer(Modifier.height(15.dp))
+            Text("PRESETS RÁPIDOS", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { listOf(1.05f, 1.08f, 1.10f, 1.12f, 1.15f).forEach { preset -> PresetButton(formatMultiplier(preset), { onValue(preset) }) } }
         }
     }
 }
+
+@Composable private fun ResolutionBox(label: String, text: String, modifier: Modifier) { Column(modifier.clip(RoundedCornerShape(10.dp)).background(Color(0xFF30203F)).padding(10.dp)) { Text(label, color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold); Text(text, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold) } }
+@Composable private fun PresetButton(text: String, onClick: () -> Unit) { TextButton(onClick = onClick, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Color(0xFF38204B)), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) { Text(text, color = Purple, fontSize = 11.sp) } }
+
+@Composable private fun ShizukuCard() { Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF172D27)), shape = RoundedCornerShape(14.dp)) { Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.CheckCircle, null, tint = Green, modifier = Modifier.size(25.dp)); Spacer(Modifier.width(10.dp)); Column { Text("SHIZUKU AUTORIZADO", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp); Text("Pronto para aplicar alterações", color = Green, fontSize = 11.sp) } } } }
+@Composable private fun FeatureRow() { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf(Icons.Default.Layers to "Overlay\nFlutuante", Icons.Default.Tune to "Projeção em\nTempo Real", Icons.Default.Restore to "Aplicar /\nRestaurar").forEach { (icon, label) -> Card(Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(12.dp)) { Column(Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) { Icon(icon, null, tint = Purple, modifier = Modifier.size(23.dp)); Spacer(Modifier.height(5.dp)); Text(label, color = Muted, fontSize = 10.sp, textAlign = TextAlign.Center) } } } } }
+@Composable private fun GameItem(name: String) { Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(13.dp)) { Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Box(Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF49305B)), contentAlignment = Alignment.Center) { Icon(Icons.Default.Apps, null, tint = Purple) }; Spacer(Modifier.width(12.dp)); Text(name, color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f)); TextButton(onClick = {}) { Text("ABRIR", color = Purple, fontWeight = FontWeight.Bold) } } } }
+
+@Composable private fun OverlayScreen(padding: PaddingValues, value: Float, onValue: (Float) -> Unit) { Column(Modifier.fillMaxSize().padding(padding).padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) { Text("OVERLAY FLUTUANTE", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold); Text("Controle o multiplicador por cima do seu jogo.", color = Muted); Card(colors = CardDefaults.cardColors(containerColor = Color(0xCC241731)), shape = RoundedCornerShape(18.dp)) { Column(Modifier.padding(20.dp)) { Text("TELA ESTICADA", color = Color.White, fontWeight = FontWeight.Bold); Text(formatMultiplier(value), color = Purple, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold); Slider(value, onValueChange = onValue, valueRange = 1f..1.3f, colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = Purple, activeTrackColor = Purple)); Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = Purple), modifier = Modifier.weight(1f)) { Text("APLICAR") }; OutlinedButton(onClick = { onValue(1f) }, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)) { Text("RESTAURAR") } } } }; Spacer(Modifier.height(8.dp)); Text("O overlay permanece disponível sobre aplicativos compatíveis quando a permissão de sobreposição estiver ativa.", color = Muted, fontSize = 12.sp) } }
+@Composable private fun HistoryScreen(padding: PaddingValues) { Column(Modifier.fillMaxSize().padding(padding).padding(18.dp)) { Text("HISTÓRICO", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold); Spacer(Modifier.height(14.dp)); Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(15.dp)) { Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.History, null, tint = Purple); Spacer(Modifier.width(12.dp)); Column { Text("Nenhuma alteração registrada", color = Color.White, fontWeight = FontWeight.Bold); Text("Suas ativações aparecerão aqui.", color = Muted, fontSize = 12.sp) } } } } }
+
+@Composable private fun SettingsScreen(padding: PaddingValues, projectionMode: String, onProjectionModeChange: (String) -> Unit, darkMode: Boolean, onDarkModeChange: (Boolean) -> Unit, onCapture: () -> Unit) { LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { item { Text("CONFIGURAÇÕES", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold); Text("O INSANO", color = Purple, fontWeight = FontWeight.Bold); Text("configuração local do dispositivo", color = Muted, fontSize = 12.sp) }; item { SettingsSection("ACESSOS TÉCNICOS") { SettingRow(Icons.Default.Shield, "Shizuku", "Autorizado", true); SettingRow(Icons.Default.Settings, "Root", "Ativar", false) } }; item { SettingsSection("MODO DE PROJEÇÃO") { ModeRow("ALONGAR", "Mantém a proporção enquanto aplica o alongamento.", projectionMode == "ALONGAR") { onProjectionModeChange("ALONGAR") }; ModeRow("CORTE LATERAL", "A região central ocupa o painel inteiro.", projectionMode == "CORTE LATERAL") { onProjectionModeChange("CORTE LATERAL") } } }; item { SettingsSection("PREFERÊNCIAS") { SettingRow(Icons.Default.Translate, "Idioma", "Português", false); Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.DarkMode, null, tint = Purple); Spacer(Modifier.width(12.dp)); Text("Tema escuro", color = Color.White, modifier = Modifier.weight(1f)); Switch(checked = darkMode, onCheckedChange = onDarkModeChange) } } }; item { SettingsSection("SUPORTE E DIAGNÓSTICO") { SettingRow(Icons.Default.BugReport, "Relatar um problema", "Enviar informações técnicas", false, onClick = onCapture); SettingRow(Icons.Default.Timer, "Captura de problemas", "Registrar etapas para diagnóstico", false, onClick = onCapture); SettingRow(Icons.Default.Info, "Sobre o Tela Esticada", "v.1.1.0", false) } } } }
+@Composable private fun SettingsSection(title: String, content: @Composable () -> Unit) { Text(title, color = Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold); Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(15.dp)) { Column(Modifier.padding(horizontal = 14.dp, vertical = 5.dp)) { content() } } }
+@Composable private fun SettingRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, positive: Boolean, onClick: () -> Unit = {}) { Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) { Icon(icon, null, tint = if (positive) Green else Purple); Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text(title, color = Color.White, fontWeight = FontWeight.SemiBold); Text(subtitle, color = if (positive) Green else Muted, fontSize = 11.sp) }; if (!positive) Icon(Icons.Default.OpenInNew, null, tint = Muted, modifier = Modifier.size(18.dp)) } }
+@Composable private fun ModeRow(title: String, desc: String, selected: Boolean, onClick: () -> Unit) { Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) { Box(Modifier.size(20.dp).clip(CircleShape).background(if (selected) Purple else Color.Transparent).clickable(onClick = onClick).padding(5.dp)); Spacer(Modifier.width(12.dp)); Column { Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp); Text(desc, color = Muted, fontSize = 11.sp) } } }
+
+@Composable private fun AddAppDialog(onDismiss: () -> Unit) { var query by remember { mutableStateOf("") }; val apps = listOf("Blood Strike", "Free Fire", "Agenda", "AnyDesk", "Authenticator", "Calculadora", "Chrome", "Gmail", "Instagram").filter { it.contains(query, true) }; AlertDialog(onDismissRequest = onDismiss, containerColor = Panel, title = { Text("ADICIONAR APLICATIVO", color = Color.White) }, text = { Column { Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF38204B)).padding(10.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Search, null, tint = Muted); Spacer(Modifier.width(8.dp)); androidx.compose.material3.OutlinedTextField(value = query, onValueChange = { query = it }, placeholder = { Text("Buscar aplicativo") }, singleLine = true) }; Spacer(Modifier.height(8.dp)); apps.forEach { app -> Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) { Text(app, color = Color.White, modifier = Modifier.weight(1f)); TextButton(onClick = onDismiss) { Text("ADICIONAR", color = Purple, fontSize = 11.sp) } } } } }, confirmButton = { TextButton(onClick = onDismiss) { Text("FECHAR", color = Purple) } }) }
+
+@Composable private fun CaptureDialog(running: Boolean, captured: Boolean, onDismiss: () -> Unit, onStart: () -> Unit, onStop: () -> Unit, onReset: () -> Unit) { var consent by remember { mutableStateOf(false) }; AlertDialog(onDismissRequest = onDismiss, containerColor = Panel, title = { Text(if (captured) "REVISAR CAPTURA" else if (running) "CAPTURA EM ANDAMENTO" else "ANTES DE COMEÇAR", color = Color.White) }, text = { Column { if (captured) { Text("A captura foi finalizada.", color = Color.White); Text("Duração e etapas registradas disponíveis para revisão.", color = Muted, fontSize = 12.sp); Spacer(Modifier.height(12.dp)); Text("O que aconteceu? (opcional)", color = Muted, fontSize = 12.sp) } else if (running) { Text("Capturando e funcionando — 00:42", color = Green, fontWeight = FontWeight.Bold); Text("Logs técnicos e etapas do aplicativo estão sendo registrados.", color = Muted, fontSize = 12.sp) } else { Text("O APK poderá registrar logs técnicos, estado do Shizuku, abertura de jogos e mensagens de erro.", color = Color.White, fontSize = 13.sp); Spacer(Modifier.height(8.dp)); Text("Não gravamos tela, áudio, senhas ou conversas.", color = Muted, fontSize = 12.sp); Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(consent, { consent = it }); Text("Li e concordo com o uso técnico dos dados", color = Color.White, fontSize = 11.sp) } } } }, confirmButton = { if (captured) { Row { TextButton(onClick = { onReset(); onDismiss() }) { Text("APAGAR", color = Color(0xFFFF6B6B)) }; TextButton(onClick = onDismiss) { Text("AGORA NÃO", color = Muted) }; Button(onClick = onDismiss, colors = ButtonDefaults.buttonColors(containerColor = Purple)) { Text("ENVIAR CAPTURA") } } } else if (running) Button(onClick = onStop, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC4545))) { Text("PARAR") } else Button(onClick = onStart, enabled = consent, colors = ButtonDefaults.buttonColors(containerColor = Purple)) { Text("INICIAR CAPTURA") } }) }
+
+private fun formatMultiplier(value: Float): String = String.format(Locale.US, "%.2fx", value)
