@@ -238,7 +238,7 @@ private fun MultiplierCard(value: Float, onValue: (Float) -> Unit, onActivate: (
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 ResolutionBox("NATIVA", "2688 x 1216", Modifier.weight(1f))
-                ResolutionBox("PROJEÇÃO", "${(2688 * value).toInt()} x 1216", Modifier.weight(1f))
+                ResolutionBox("PROJEÇÃO", "${(2688f / value).toInt()} x 1216", Modifier.weight(1f))
             }
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -274,52 +274,11 @@ private fun MultiplierCard(value: Float, onValue: (Float) -> Unit, onActivate: (
 private fun formatMultiplier(value: Float): String = String.format(Locale.US, "%.2fx", value)
 
 private object ShizukuBridge {
-    private const val REQUEST_CODE = 2408
+    fun isReady(context: Context): Boolean = StretchProjectionEngine.isReady(context)
 
-    fun isReady(context: Context): Boolean {
-        return try {
-            if (!Shizuku.pingBinder()) return false
-            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) return true
-            Shizuku.requestPermission(REQUEST_CODE)
-            false
-        } catch (_: Throwable) { false }
-    }
+    fun apply(context: Context, multiplier: Float): Boolean =
+        StretchProjectionEngine.apply(context, multiplier)
 
-    fun apply(context: Context, multiplier: Float): Boolean {
-        return try {
-            if (!isReady(context)) {
-                Toast.makeText(context, "Abra o Shizuku e autorize o CAT RESOLUTION PRO", Toast.LENGTH_LONG).show()
-                false
-            } else {
-                val metrics = context.resources.displayMetrics
-                val width = (metrics.widthPixels * multiplier).toInt()
-                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "wm size ${width}x${metrics.heightPixels}"))
-                process.waitFor()
-                val success = process.exitValue() == 0
-                Toast.makeText(context, if (success) "Resolução aplicada: ${width} x ${metrics.heightPixels}" else "Não foi possível aplicar a resolução", Toast.LENGTH_SHORT).show()
-                success
-            }
-        } catch (_: Throwable) {
-            Toast.makeText(context, "Erro ao executar o comando pelo Shizuku", Toast.LENGTH_LONG).show()
-            false
-        }
-    }
-
-    fun restore(context: Context): Boolean {
-        return try {
-            if (!isReady(context)) {
-                Toast.makeText(context, "Shizuku não está autorizado", Toast.LENGTH_SHORT).show()
-                false
-            } else {
-                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "wm size reset"))
-                process.waitFor()
-                val success = process.exitValue() == 0
-                Toast.makeText(context, if (success) "Resolução restaurada" else "Não foi possível restaurar", Toast.LENGTH_SHORT).show()
-                success
-            }
-        } catch (_: Throwable) {
-            Toast.makeText(context, "Erro ao restaurar a resolução", Toast.LENGTH_LONG).show()
-            false
-        }
-    }
+    fun restore(context: Context): Boolean =
+        StretchProjectionEngine.restore(context)
 }
