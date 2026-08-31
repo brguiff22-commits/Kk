@@ -18,9 +18,17 @@ internal object StretchProjectionEngine {
     fun isReady(context: Context): Boolean {
         return try {
             if (!Shizuku.pingBinder()) return hasRoot()
-            if (Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED) true
-            else { Shizuku.requestPermission(REQUEST_CODE); false }
+            Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED
         } catch (_: Throwable) { hasRoot() }
+    }
+
+    fun requestPermissionIfNeeded(): Boolean {
+        return try {
+            if (!Shizuku.pingBinder()) return false
+            if (Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED) return true
+            Shizuku.requestPermission(REQUEST_CODE)
+            true
+        } catch (_: Throwable) { false }
     }
 
     fun apply(context: Context, multiplier: Float): Boolean {

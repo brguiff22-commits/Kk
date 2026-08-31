@@ -1,6 +1,8 @@
 package com.example
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -90,9 +92,37 @@ private val Muted = Color(0xFFB9AAC7)
 private val Green = Color(0xFF4ADE80)
 
 class MainActivity : ComponentActivity() {
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val binderListener = Shizuku.OnBinderReceivedListener {
+        mainHandler.post { ShizukuBridge.requestPermissionIfNeeded() }
+    }
+    private val permissionListener = Shizuku.OnRequestPermissionResultListener { _, _ ->
+        mainHandler.post { recreate() }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        runCatching {
+            Shizuku.addBinderReceivedListenerSticky(binderListener)
+            Shizuku.addRequestPermissionResultListener(permissionListener)
+        }
         setContent { MinhaIATheme { CatResolutionApp() } }
+        // Solicita a confirmação assim que a tela inicial estiver pronta.
+        mainHandler.postDelayed({ ShizukuBridge.requestPermissionIfNeeded() }, 350L)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mainHandler.postDelayed({ ShizukuBridge.requestPermissionIfNeeded() }, 250L)
+    }
+
+    override fun onDestroy() {
+        mainHandler.removeCallbacksAndMessages(null)
+        runCatching {
+            Shizuku.removeBinderReceivedListener(binderListener)
+            Shizuku.removeRequestPermissionResultListener(permissionListener)
+        }
+        super.onDestroy()
     }
 }
 
@@ -275,6 +305,9 @@ private fun formatMultiplier(value: Float): String = String.format(Locale.US, "%
 
 private object ShizukuBridge {
     fun isReady(context: Context): Boolean = StretchProjectionEngine.isReady(context)
+
+    fun requestPermissionIfNeeded(): Boolean =
+        StretchProjectionEngine.requestPermissionIfNeeded()
 
     fun apply(context: Context, multiplier: Float): Boolean =
         StretchProjectionEngine.apply(context, multiplier)
